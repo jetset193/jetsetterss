@@ -167,9 +167,14 @@ function CruiseBookingSummary() {
       const orderData = {
         amount: convertedTotalAmount,
         currency: userCurrency,
-        customerName: paymentDetails.cardHolder,
-        customerEmail: 'customer@example.com', // You might want to collect this in the form
-        description: `Cruise booking: ${cruiseData.name}`,
+        booking_type: 'cruise',
+        booking_details: {
+          cruise_id: cruiseData.id,
+          cruise_name: cruiseData.name,
+          passengers: passengerDetails,
+          customer_name: paymentDetails.cardHolder,
+          customer_email: 'customer@example.com'
+        },
         orderId: orderId
       };
 
@@ -190,6 +195,8 @@ function CruiseBookingSummary() {
       // Step 2: Process payment
       const paymentData = {
         orderId: orderId,
+        amount: convertedTotalAmount,
+        currency: userCurrency,
         cardDetails: {
           cardNumber: paymentDetails.cardNumber,
           expiryDate: paymentDetails.expiryDate,
