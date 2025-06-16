@@ -1,13 +1,5 @@
 {
     "version": 2,
-    "functions": {
-        "server.js": {
-            "runtime": "@vercel/node"
-        },
-        "amadeus-proxy.js": {
-            "runtime": "@vercel/node"
-        }
-    },
     "routes": [
         {
             "src": "/assets/(.*)",
@@ -54,10 +46,10 @@
     "build": {
         "env": {
             "VITE_APP_NAME": "JetSet App",
-            "VITE_API_URL": "https://prod-hynvhvhdj-shubhams-projects-4a867368.vercel.app/api",
-            "VITE_APP_URL": "https://prod-hynvhvhdj-shubhams-projects-4a867368.vercel.app",
-            "VITE_PROD_API_URL": "https://prod-hynvhvhdj-shubhams-projects-4a867368.vercel.app/api",
-            "VITE_PROD_APP_URL": "https://prod-hynvhvhdj-shubhams-projects-4a867368.vercel.app"
+            "VITE_API_URL": "https://prod-og1k4j633-shubhams-projects-4a867368.vercel.app/api",
+            "VITE_APP_URL": "https://prod-og1k4j633-shubhams-projects-4a867368.vercel.app",
+            "VITE_PROD_API_URL": "https://prod-og1k4j633-shubhams-projects-4a867368.vercel.app/api",
+            "VITE_PROD_APP_URL": "https://prod-og1k4j633-shubhams-projects-4a867368.vercel.app"
         }
     }
 }
