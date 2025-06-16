@@ -223,6 +223,13 @@ class CurrencyService {
     const currency = currencyCode || this.getCurrency();
     return CURRENCY_CONFIG[currency]?.symbol || '$';
   }
+
+  /**
+   * Get exchange rate for a currency
+   */
+  getExchangeRate(currencyCode) {
+    return EXCHANGE_RATES[currencyCode] || 1;
+  }
 }
 
 // Create a singleton instance

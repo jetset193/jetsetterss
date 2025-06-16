@@ -436,10 +436,9 @@ function FlightSearchPage() {
           price: {
             amount: parseFloat(price.total),
             total: price.total,
-            currency: price.currency || 'INR',
+            currency: price.currency || 'USD',
             base: price.base,
-            fees: price.fees,
-            formatted: `$${parseFloat(price.total).toLocaleString('en-US')}`
+            fees: price.fees
           },
           amenities: flight.travelerPricings[0].fareDetailsBySegment[0].amenities || [],
           baggage: {
@@ -502,8 +501,7 @@ function FlightSearchPage() {
           price: {
             amount: flight.price.amount,
             total: flight.price.total,
-            currency: flight.price.currency || 'INR',
-            formatted: `₹${flight.price.amount.toLocaleString('en-IN')}`
+            currency: flight.price.currency || 'INR'
           },
           amenities: [],
           baggage: {
@@ -2001,7 +1999,7 @@ const FlightSearchForm = ({ initialData, onSearch }) => {
                             <div className="flex flex-col items-end">
                               <div className="text-right mb-3">
                                 <div className="text-3xl font-bold text-blue-600 flex items-center">
-                                  <Price amount={flight.price?.amount || flight.price?.total || 0} showCode={true} />
+                                  <Price amount={flight.price} showCode={true} />
                                   {Math.random() > 0.7 && (
                                     <span className="ml-2 px-2 py-0.5 text-xs font-bold bg-green-100 text-green-700 rounded-full">DEAL</span>
                                   )}

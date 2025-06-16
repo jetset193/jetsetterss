@@ -38,8 +38,27 @@ const Price = ({ amount, className = '', showCode = false }) => {
     }
     
     try {
-      const price = currencyService.convertAndFormat(amount, currency);
-      setFormattedPrice(price);
+      // Check if amount is an object with currency info
+      if (typeof amount === 'object' && amount.amount && amount.currency) {
+        const targetCurrency = currency || currencyService.getCurrency();
+        
+        // If the source currency matches target currency, no conversion needed
+        if (amount.currency === targetCurrency) {
+          const price = currencyService.formatPrice(amount.amount, targetCurrency);
+          setFormattedPrice(price);
+        } else {
+          // Convert from source currency to target currency
+          // First convert to USD base, then to target currency
+          const usdAmount = amount.currency === 'USD' ? amount.amount : amount.amount / (currencyService.getExchangeRate(amount.currency) || 1);
+          const convertedAmount = currencyService.convertPrice(usdAmount, targetCurrency);
+          const price = currencyService.formatPrice(convertedAmount, targetCurrency);
+          setFormattedPrice(price);
+        }
+      } else {
+        // Assume amount is in USD and convert/format as before
+        const price = currencyService.convertAndFormat(amount, currency);
+        setFormattedPrice(price);
+      }
     } catch (error) {
       console.error('Error formatting price:', error);
       setFormattedPrice(amount.toString());
