@@ -1,6 +1,3 @@
-// api/auth/register.js - Specific handler for registration endpoint
-import app from '../../server.js';
-
 export default function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -13,23 +10,22 @@ export default function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const { email, password, name } = req.body;
+    const { email, password } = req.body;
     
     // Simple validation
-    if (!email || !password || !name) {
+    if (!email || !password) {
       return res.status(400).json({
         success: false,
-        error: 'Name, email and password are required'
+        error: 'Email and password are required'
       });
     }
 
     // For now, return a success response (you can integrate with Supabase later)
-    res.status(201).json({
+    res.status(200).json({
       success: true,
-      message: 'Registration endpoint working',
+      message: 'Login endpoint working',
       user: {
         email: email,
-        name: name,
         id: 'test-user-id'
       },
       token: 'test-jwt-token'
