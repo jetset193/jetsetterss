@@ -1,45 +1,69 @@
-export default function handler(req, res) {
+export default async function handler(req, res) {
   // Set CORS headers
+  res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
 
-  if (req.method === 'POST') {
-    const { amount, currency, booking_type, booking_details } = req.body;
-    
-    // Simple validation
-    if (!amount || !currency || !booking_type) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const {
+      amount,
+      currency = 'USD',
+      orderId,
+      customerEmail,
+      customerName,
+      description,
+      returnUrl,
+      cancelUrl
+    } = req.body;
+
+    // Validate required fields
+    if (!amount || !orderId || !customerEmail) {
       return res.status(400).json({
         success: false,
-        error: 'Amount, currency, and booking_type are required'
+        error: 'Missing required fields: amount, orderId, customerEmail'
       });
     }
 
-    // Generate a mock order ID
-    const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Mock payment order creation response
+    // Generate order data
+    const orderData = {
+      orderId: orderId || `ORDER_${Date.now()}`,
+      amount: parseFloat(amount),
+      currency,
+      customerEmail,
+      customerName: customerName || 'Guest User',
+      description: description || `Payment for order ${orderId}`,
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+      returnUrl,
+      cancelUrl,
+      merchantId: 'TESTARC05511704',
+      environment: 'sandbox'
+    };
+
     res.status(200).json({
       success: true,
-      message: 'Payment order created successfully',
-      order: {
-        id: orderId,
-        amount: amount,
-        currency: currency,
-        status: 'pending',
-        booking_type: booking_type,
-        booking_details: booking_details,
-        created_at: new Date().toISOString(),
-        payment_url: `https://prod-shubhams-projects-4a867368.vercel.app/payment/${orderId}`,
-        expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutes from now
-      }
+      orderId: orderData.orderId,
+      orderData,
+      message: 'Order created successfully'
     });
-  } else {
-    res.status(405).json({ error: 'Method not allowed' });
+
+  } catch (error) {
+    console.error('Order creation error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create order',
+      details: error.message
+    });
   }
 } 

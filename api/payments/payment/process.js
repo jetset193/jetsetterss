@@ -1,77 +1,91 @@
-export default function handler(req, res) {
+export default async function handler(req, res) {
   // Set CORS headers
+  res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
 
-  if (req.method === 'POST') {
-    const { orderId, cardDetails, billingAddress } = req.body;
-    
-    // Simple validation
-    if (!orderId || !cardDetails || !cardDetails.cardNumber) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const {
+      orderId,
+      cardDetails,
+      billingAddress,
+      browserData
+    } = req.body;
+
+    // Validate required fields
+    if (!orderId || !cardDetails) {
       return res.status(400).json({
         success: false,
-        error: 'Order ID and card details are required'
+        error: 'Missing required fields: orderId, cardDetails'
       });
     }
 
-    // Mock payment processing logic
-    const cardNumber = cardDetails.cardNumber.replace(/\s/g, '');
+    // Basic card validation
+    const { cardNumber, expiryDate, cvv, cardHolder } = cardDetails;
     
-    // Simulate different card responses for testing
-    let paymentResult = {
-      success: true,
-      transactionId: `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      status: 'completed',
-      message: 'Payment processed successfully'
-    };
-
-    // Test card numbers for different scenarios
-    if (cardNumber === '4000000000000002') {
-      // Declined card
-      paymentResult = {
+    if (!cardNumber || !expiryDate || !cvv || !cardHolder) {
+      return res.status(400).json({
         success: false,
-        error: 'Card declined',
-        status: 'declined'
-      };
-    } else if (cardNumber === '4000000000000119') {
-      // Processing error
-      paymentResult = {
-        success: false,
-        error: 'Processing error',
-        status: 'error'
-      };
+        error: 'Incomplete card details'
+      });
     }
 
+    // Simulate payment processing
+    // In a real implementation, this would integrate with ARC Pay API
+    
+    // Generate transaction ID
+    const transactionId = `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     // Simulate processing delay
-    setTimeout(() => {
-      if (paymentResult.success) {
-        res.status(200).json({
-          success: true,
-          message: paymentResult.message,
-          transactionId: paymentResult.transactionId,
-          orderId: orderId,
-          status: paymentResult.status,
-          processedAt: new Date().toISOString(),
-          amount: req.body.amount || '0.00',
-          currency: req.body.currency || 'USD'
-        });
-      } else {
-        res.status(400).json({
-          success: false,
-          error: paymentResult.error,
-          status: paymentResult.status,
-          orderId: orderId
-        });
-      }
-    }, 1000); // 1 second delay to simulate processing
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Simulate success (90% success rate for demo)
+    const isSuccess = Math.random() > 0.1;
+    
+    if (!isSuccess) {
+      return res.status(400).json({
+        success: false,
+        error: 'Payment declined by bank',
+        errorCode: 'PAYMENT_DECLINED'
+      });
+    }
 
-  } else {
-    res.status(405).json({ error: 'Method not allowed' });
+    const paymentData = {
+      transactionId,
+      orderId,
+      status: 'COMPLETED',
+      amount: 0, // This would come from the order
+      currency: 'USD',
+      paymentMethod: 'CREDIT_CARD',
+      cardLast4: cardNumber.slice(-4),
+      processedAt: new Date().toISOString(),
+      authCode: `AUTH${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+      merchantId: 'TESTARC05511704'
+    };
+
+    res.status(200).json({
+      success: true,
+      paymentData,
+      transactionId,
+      message: 'Payment processed successfully'
+    });
+
+  } catch (error) {
+    console.error('Payment processing error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Payment processing failed',
+      details: error.message
+    });
   }
 } 

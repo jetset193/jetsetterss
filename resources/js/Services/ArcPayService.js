@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Use the backend API for ARC Pay integration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+// Use the Vercel API endpoints for ARC Pay integration
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 class ArcPayService {
     constructor() {
@@ -10,7 +10,8 @@ class ArcPayService {
             baseURL: this.apiUrl,
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            timeout: 10000 // 10 second timeout
         });
     }
 

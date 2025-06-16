@@ -168,7 +168,8 @@ function FlightPayment() {
       console.log('🔍 Checking ARC Pay Gateway status...');
       const gatewayStatus = await ArcPayService.checkGatewayStatus();
       
-      if (!gatewayStatus.gatewayOperational) {
+      if (!gatewayStatus.success || !gatewayStatus.gatewayOperational) {
+        console.warn('Gateway status check failed:', gatewayStatus);
         throw new Error('Payment gateway is currently unavailable. Please try again later.');
       }
 
@@ -282,7 +283,17 @@ function FlightPayment() {
       setShowPaymentResult(true);
       
       // Show user-friendly error message
-      alert(`Payment failed: ${error.message}`);
+      let errorMessage = 'Payment processing failed. Please try again.';
+      
+      if (error.message.includes('gateway')) {
+        errorMessage = 'Payment gateway is temporarily unavailable. Please try again in a few minutes.';
+      } else if (error.message.includes('network') || error.message.includes('timeout')) {
+        errorMessage = 'Network connection issue. Please check your internet connection and try again.';
+      } else if (error.message.includes('card') || error.message.includes('Card')) {
+        errorMessage = error.message;
+      }
+      
+      alert(`Payment failed: ${errorMessage}`);
     } finally {
       setProcessingPayment(false);
     }
