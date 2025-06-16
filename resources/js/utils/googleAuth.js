@@ -4,8 +4,8 @@
  * Handles the initialization and management of Google authentication 
  */
 
-// The Google client ID from your Google Cloud Console
-const GOOGLE_CLIENT_ID = "463609792474-nr70b2jrphprah8d4ene5aubrofv484j.apps.googleusercontent.com";
+// The Google client ID from environment variables or fallback to hardcoded value
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "463609792474-nr70b2jrphprah8d4ene5aubrofv484j.apps.googleusercontent.com";
 
 // Function to load the Google API script
 export const loadGoogleScript = () => {

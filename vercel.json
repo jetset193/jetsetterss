@@ -45,7 +45,8 @@
             "VITE_API_URL": "/api",
             "VITE_APP_URL": "https://prod-shubhams-projects-4a867368.vercel.app",
             "VITE_PROD_API_URL": "/api",
-            "VITE_PROD_APP_URL": "https://prod-shubhams-projects-4a867368.vercel.app"
+            "VITE_PROD_APP_URL": "https://prod-shubhams-projects-4a867368.vercel.app",
+            "VITE_GOOGLE_CLIENT_ID": "463609792474-nr70b2jrphprah8d4ene5aubrofv484j.apps.googleusercontent.com"
         }
     }
 }
