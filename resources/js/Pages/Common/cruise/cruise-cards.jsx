@@ -34,20 +34,20 @@ const CruiseCards = () => {
         throw new Error('Failed to fetch cruise data');
       }
 
-      const data = await response.json();
+      const apiResponse = await response.json();
       
       // Transform API data to match our local data structure
-      const transformedCruises = data.map(cruise => ({
-        id: Math.random().toString(36).substr(2, 9),
-        name: cruise.cruiseLine,
+      const transformedCruises = apiResponse.data.map(cruise => ({
+        id: cruise.id || Math.random().toString(36).substr(2, 9),
+        name: cruise.cruise_line,
         image: cruise.image || '/images/default-cruise.jpg',
-        duration: cruise.duration,
+        duration: `${cruise.duration} Days`,
         description: cruise.name,
         destinations: cruise.destinations,
-        departurePorts: [cruise.departurePort],
-        price: cruise.price,
-        priceValue: parseFloat(cruise.price.replace(/[^0-9.]/g, '')),
-        departureDate: cruise.departureDate
+        departurePorts: [cruise.departure_port],
+        price: `$${cruise.price_per_person}`,
+        priceValue: cruise.price_per_person,
+        departureDate: cruise.departure_date
       }));
 
       setFilteredCruises(transformedCruises);

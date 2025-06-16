@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+  <defs>
+    <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#E6E6FA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#B0C4DE;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="waterGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#708090;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2F4F4F;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Sky -->
+  <rect width="400" height="150" fill="url(#skyGradient)"/>
+  
+  <!-- Water -->
+  <rect y="150" width="400" height="150" fill="url(#waterGradient)"/>
+  
+  <!-- Mountains -->
+  <polygon points="0,120 50,80 100,120" fill="#696969"/>
+  <polygon points="80,120 130,70 180,120" fill="#708090"/>
+  <polygon points="300,120 350,60 400,120" fill="#696969"/>
+  
+  <!-- Snow caps -->
+  <polygon points="40,90 50,80 60,90" fill="white"/>
+  <polygon points="120,80 130,70 140,80" fill="white"/>
+  <polygon points="340,70 350,60 360,70" fill="white"/>
+  
+  <!-- Cruise Ship -->
+  <g transform="translate(150, 120)">
+    <!-- Hull -->
+    <path d="M0 30 Q0 50 20 50 L80 50 Q100 50 100 30 L90 20 L10 20 Z" fill="#ffffff" stroke="#4B0082" stroke-width="2"/>
+    <!-- Decks -->
+    <rect x="10" y="10" width="80" height="15" fill="#ffffff" stroke="#4B0082" stroke-width="1"/>
+    <rect x="20" y="0" width="60" height="15" fill="#ffffff" stroke="#4B0082" stroke-width="1"/>
+    <!-- Smokestacks -->
+    <rect x="35" y="-15" width="6" height="20" fill="#ff4444"/>
+    <rect x="55" y="-15" width="6" height="20" fill="#ff4444"/>
+    <!-- Windows -->
+    <rect x="15" y="12" width="3" height="3" fill="#708090"/>
+    <rect x="25" y="12" width="3" height="3" fill="#708090"/>
+    <rect x="35" y="12" width="3" height="3" fill="#708090"/>
+    <rect x="45" y="12" width="3" height="3" fill="#708090"/>
+    <rect x="55" y="12" width="3" height="3" fill="#708090"/>
+    <rect x="65" y="12" width="3" height="3" fill="#708090"/>
+    <rect x="75" y="12" width="3" height="3" fill="#708090"/>
+  </g>
+  
+  <!-- Water waves -->
+  <path d="M0 200 Q50 195 100 200 T200 200 T300 200 T400 200" stroke="white" stroke-width="2" fill="none" opacity="0.6"/>
+  <path d="M0 220 Q50 215 100 220 T200 220 T300 220 T400 220" stroke="white" stroke-width="1" fill="none" opacity="0.4"/>
+  
+  <!-- Text overlay -->
+  <rect x="10" y="250" width="200" height="40" fill="rgba(0,0,0,0.7)" rx="5"/>
+  <text x="20" y="270" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">
+    Alaska Wilderness
+  </text>
+  <text x="20" y="285" font-family="Arial, sans-serif" font-size="12" fill="white">
+    Princess Cruises • 8 Days
+  </text>
+</svg> 

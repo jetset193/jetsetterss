@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="shipGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0066b2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#004080;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Ship hull -->
+  <path d="M20 60 Q20 70 30 70 L70 70 Q80 70 80 60 L75 55 L25 55 Z" fill="url(#shipGradient)"/>
+  <!-- Ship deck -->
+  <rect x="25" y="45" width="50" height="15" fill="#ffffff" stroke="#0066b2" stroke-width="2"/>
+  <!-- Ship cabin -->
+  <rect x="35" y="35" width="30" height="15" fill="#ffffff" stroke="#0066b2" stroke-width="2"/>
+  <!-- Smokestacks -->
+  <rect x="42" y="25" width="4" height="15" fill="#ff4444"/>
+  <rect x="54" y="25" width="4" height="15" fill="#ff4444"/>
+  <!-- Smoke -->
+  <circle cx="44" cy="22" r="2" fill="#cccccc" opacity="0.7"/>
+  <circle cx="56" cy="22" r="2" fill="#cccccc" opacity="0.7"/>
+  <!-- Water waves -->
+  <path d="M10 75 Q15 73 20 75 T30 75 T40 75 T50 75 T60 75 T70 75 T80 75 T90 75" stroke="#4da6ff" stroke-width="2" fill="none"/>
+  <path d="M10 80 Q15 78 20 80 T30 80 T40 80 T50 80 T60 80 T70 80 T80 80 T90 80" stroke="#66b3ff" stroke-width="1.5" fill="none"/>
+</svg> 
