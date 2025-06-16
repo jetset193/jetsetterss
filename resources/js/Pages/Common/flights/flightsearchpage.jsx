@@ -1796,9 +1796,9 @@ const FlightSearchForm = ({ initialData, onSearch }) => {
             <div className="flex flex-col md:flex-row gap-6">
               {/* Enhanced Filter Sidebar */}
               <div className="w-full md:w-1/4">
-                <div className="bg-white rounded-xl shadow-md border border-gray-200 sticky top-24 overflow-hidden">
+                <div className="card border border-gray-200 sticky top-24 overflow-hidden">
                   {/* Filter Header */}
-                  <div className="bg-gradient-to-r from-indigo-600 to-blue-500 p-4 text-white relative overflow-hidden">
+                  <div className="gradient-primary p-5 text-white relative overflow-hidden">
                     <div className="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-white/10"></div>
                     <div className="absolute -right-1 top-8 h-8 w-8 rounded-full bg-white/10"></div>
                     <h3 className="text-lg font-bold flex items-center relative z-10">
@@ -1811,9 +1811,9 @@ const FlightSearchForm = ({ initialData, onSearch }) => {
                   <div className="p-5 border-b border-gray-200">
                     <h4 className="font-medium text-gray-800 mb-4">Price Range</h4>
                     <div className="px-2">
-                      <div className="flex justify-between mb-2">
-                        <span className="text-sm font-medium text-blue-600">${filters.price[0]}</span>
-                        <span className="text-sm font-medium text-blue-600">${filters.price[1]}</span>
+                      <div className="flex justify-between mb-3">
+                        <span className="text-sm font-medium text-primary-600">${filters.price[0]}</span>
+                        <span className="text-sm font-medium text-primary-600">${filters.price[1]}</span>
                       </div>
                       
                       <input
@@ -1823,7 +1823,7 @@ const FlightSearchForm = ({ initialData, onSearch }) => {
                         step="1000"
                         value={filters.price[1]}
                         onChange={(e) => handleFilterChange('price', [filters.price[0], parseInt(e.target.value)])}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600 focus-ring"
                       />
                     </div>
                   </div>
@@ -1832,15 +1832,15 @@ const FlightSearchForm = ({ initialData, onSearch }) => {
                   <div className="p-5 border-b border-gray-200">
                     <h4 className="font-medium text-gray-800 mb-4">Stops</h4>
                     <div className="space-y-2">
-                      <label className="flex items-center p-2 hover:bg-blue-50 rounded-md transition-colors cursor-pointer">
+                      <label className="flex items-center p-3 hover:bg-primary-50 rounded-lg transition-colors cursor-pointer">
                         <input 
                           type="radio" 
                           name="stops"
-                          className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500" 
+                          className="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500" 
                           checked={filters.stops === "any"}
                           onChange={() => handleFilterChange('stops', "any")}
                         />
-                        <span className="ml-2 text-gray-700">Any number of stops</span>
+                        <span className="ml-3 text-gray-700 font-medium">Any number of stops</span>
                       </label>
                       
                       <label className="flex items-center p-2 hover:bg-blue-50 rounded-md transition-colors cursor-pointer">
@@ -1907,11 +1907,11 @@ const FlightSearchForm = ({ initialData, onSearch }) => {
               {/* Results */}
               <div className="w-full md:w-3/4">
                 {/* Sort Controls */}
-                <div className="bg-white rounded-xl shadow-md p-5 mb-6 border border-gray-200">
+                <div className="card p-6 mb-6 border border-gray-200">
                   <div className="flex flex-col md:flex-row items-center justify-between">
                     <div className="mb-4 md:mb-0">
                       <p className="text-gray-600">
-                        <span className="font-bold text-blue-600 text-lg">{totalItems}</span> 
+                        <span className="font-bold text-primary-600 text-lg">{totalItems}</span> 
                         <span className="text-gray-700"> flights found</span>
                         <span className="text-sm text-gray-500 ml-2">
                           (Showing {startIndex + 1} to {endIndex})
@@ -1925,7 +1925,7 @@ const FlightSearchForm = ({ initialData, onSearch }) => {
                         <select
                           value={sortOrder}
                           onChange={(e) => setSortOrder(e.target.value)}
-                          className="appearance-none pl-3 pr-10 py-2 bg-blue-50 border border-blue-200 rounded-lg text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="form-input appearance-none pl-3 pr-10 py-2 bg-primary-50 border border-primary-200 rounded-lg text-gray-700 font-medium focus-ring"
                         >
                           <option value="price">Price - Low to High</option>
                           <option value="-price">Price - High to Low</option>
@@ -1933,7 +1933,7 @@ const FlightSearchForm = ({ initialData, onSearch }) => {
                           <option value="departure">Departure - Earliest</option>
                           <option value="arrival">Arrival - Earliest</option>
                         </select>
-                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-500 h-4 w-4 pointer-events-none" />
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-primary-500 h-4 w-4 pointer-events-none" />
                       </div>
                     </div>
                   </div>
@@ -1941,12 +1941,12 @@ const FlightSearchForm = ({ initialData, onSearch }) => {
                 
                 {/* Enhanced Flight Cards */}
                 {currentItems.length === 0 ? (
-                  <div className="bg-white rounded-xl shadow-md p-10 text-center">
-                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-100 mb-6">
-                      <Plane className="h-10 w-10 text-blue-500" />
+                  <div className="card p-12 text-center">
+                    <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-primary-100 mb-8 animate-bounce-gentle">
+                      <Plane className="h-12 w-12 text-primary-500" />
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-800 mb-3">No flights found</h3>
-                    <p className="text-gray-600 mb-6 max-w-md mx-auto">We couldn't find any flights matching your criteria. Try adjusting your search filters or dates.</p>
+                    <h3 className="heading-md text-gray-800 mb-4">No flights found</h3>
+                    <p className="text-lead text-gray-600 mb-8 max-w-md mx-auto">We couldn't find any flights matching your criteria. Try adjusting your search filters or dates.</p>
                     <button 
                       onClick={() => {
                         setFilters({
@@ -1955,7 +1955,7 @@ const FlightSearchForm = ({ initialData, onSearch }) => {
                           airlines: []
                         });
                       }}
-                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md inline-flex items-center"
+                      className="btn btn-primary btn-lg"
                     >
                       <X className="h-4 w-4 mr-2" />
                       Reset All Filters
@@ -1966,18 +1966,18 @@ const FlightSearchForm = ({ initialData, onSearch }) => {
                     {currentItems.map((flight, index) => (
                       <div 
                         key={index} 
-                        className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
+                        className="card card-hover overflow-hidden border border-gray-200 hover:border-primary-200 transition-all duration-300"
                       >
                         {/* Top section with airline and price */}
                         <div className="p-5">
                           <div className="flex flex-col md:flex-row items-center justify-between">
                             {/* Airline and Flight Info */}
                             <div className="flex items-center mb-4 md:mb-0">
-                              <div className="w-14 h-14 flex items-center justify-center bg-gray-100 rounded-lg mr-4 overflow-hidden shadow-sm">
+                              <div className="w-16 h-16 flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl mr-4 overflow-hidden shadow-soft border border-primary-200">
                                 <img 
                                   src={flight.airline?.logo} 
                                   alt={flight.airline?.name || 'Airline'}
-                                  className="w-10 h-10 object-contain"
+                                  className="w-12 h-12 object-contain"
                                   onError={(e) => {
                                     e.target.onerror = null;
                                     // Use a data URL for the airplane emoji as fallback
@@ -1998,17 +1998,17 @@ const FlightSearchForm = ({ initialData, onSearch }) => {
                             {/* Price and Book Button */}
                             <div className="flex flex-col items-end">
                               <div className="text-right mb-3">
-                                <div className="text-3xl font-bold text-blue-600 flex items-center">
+                                <div className="text-3xl font-bold text-primary-600 flex items-center">
                                   <Price amount={flight.price} showCode={true} />
                                   {Math.random() > 0.7 && (
-                                    <span className="ml-2 px-2 py-0.5 text-xs font-bold bg-green-100 text-green-700 rounded-full">DEAL</span>
+                                    <span className="ml-2 badge badge-success text-xs font-bold">DEAL</span>
                                   )}
                                 </div>
                                 <div className="text-xs text-gray-500">per passenger</div>
                               </div>
                               <button
                                 onClick={() => handleBookFlight(flight)}
-                                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg hover:from-blue-700 hover:to-blue-600 transition-all shadow-md font-medium"
+                                className="btn btn-primary btn-lg gradient-primary hover:shadow-glow"
                               >
                                 Book Now
                               </button>
@@ -2069,11 +2069,11 @@ const FlightSearchForm = ({ initialData, onSearch }) => {
                   <div className="text-sm text-gray-600 mb-4">
                     Showing {startIndex + 1} to {endIndex} of {totalItems} flights
                   </div>
-                  <nav className="inline-flex items-center gap-1 bg-white rounded-lg shadow-md p-1.5">
+                                      <nav className="inline-flex items-center gap-1 card p-2">
                     <button
                       onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage === 1}
-                      className="p-2 rounded-md text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors disabled:opacity-50"
+                      className="p-2 rounded-md text-gray-500 hover:bg-primary-50 hover:text-primary-600 transition-colors disabled:opacity-50 focus-ring"
                     >
                       <ChevronLeft className="h-5 w-5" />
                     </button>
@@ -2092,10 +2092,10 @@ const FlightSearchForm = ({ initialData, onSearch }) => {
                           <button
                             key={pageNumber}
                             onClick={() => handlePageChange(pageNumber)}
-                            className={`w-9 h-9 rounded-md font-medium flex items-center justify-center ${
+                            className={`w-9 h-9 rounded-md font-medium flex items-center justify-center transition-all focus-ring ${
                               isCurrentPage
-                                ? 'bg-blue-600 text-white shadow-sm'
-                                : 'text-gray-700 hover:bg-blue-50'
+                                ? 'bg-primary-600 text-white shadow-md'
+                                : 'text-gray-700 hover:bg-primary-50 hover:text-primary-600'
                             }`}
                           >
                             {pageNumber}
