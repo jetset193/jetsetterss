@@ -19,7 +19,7 @@ class ArcPayService {
     async checkGatewayStatus() {
         try {
             console.log('🔍 Checking ARC Pay Gateway status...');
-            const response = await this.api.get('/gateway/status');
+            const response = await this.api.get('?action=gateway-status');
             return {
                 success: true,
                 data: response.data,
@@ -39,7 +39,7 @@ class ArcPayService {
     async createSession() {
         try {
             console.log('🚀 Creating payment session...');
-            const response = await this.api.post('/session/create');
+            const response = await this.api.post('?action=session-create');
             return {
                 success: true,
                 sessionData: response.data.sessionData,
@@ -70,7 +70,7 @@ class ArcPayService {
                 cancelUrl: paymentData.cancelUrl
             };
 
-            const response = await this.api.post('/order/create', orderPayload);
+            const response = await this.api.post('?action=order-create', orderPayload);
             
             return {
                 success: true,
@@ -104,7 +104,7 @@ class ArcPayService {
                 browserData: paymentData.browserData
             };
 
-            const response = await this.api.post('/payment/process', paymentPayload);
+            const response = await this.api.post('?action=payment-process', paymentPayload);
             
             return {
                 success: response.data.success,
@@ -126,7 +126,7 @@ class ArcPayService {
         try {
             console.log('🔍 Verifying payment for order:', orderId);
             
-            const response = await this.api.get(`/payment/verify/${orderId}`);
+            const response = await this.api.get(`?action=payment-verify&orderId=${orderId}`);
             
             return {
                 success: true,
@@ -154,7 +154,7 @@ class ArcPayService {
                 reason: reason
             };
 
-            const response = await this.api.post('/payment/refund', refundPayload);
+            const response = await this.api.post('?action=payment-refund', refundPayload);
             
             return {
                 success: response.data.success,
@@ -176,7 +176,7 @@ class ArcPayService {
         try {
             console.log('🧪 Testing ARC Pay integration...');
             
-            const response = await this.api.post('/test');
+            const response = await this.api.post('?action=test');
             
             return {
                 success: true,
