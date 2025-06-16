@@ -173,7 +173,7 @@ function CruiseBookingSummary() {
         orderId: orderId
       };
 
-      const orderResponse = await fetch('http://localhost:5005/api/payments/order/create', {
+      const orderResponse = await fetch('/api/payments/order/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -202,7 +202,7 @@ function CruiseBookingSummary() {
       };
 
       // Process payment through our ARC Pay backend
-      const response = await fetch('http://localhost:5005/api/payments/payment/process', {
+      const response = await fetch('/api/payments/payment/process', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
