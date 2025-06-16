@@ -69,23 +69,51 @@ class CurrencyService {
    */
   async detectUserCurrency() {
     try {
+      // Check if user has already set a preference
+      const storedCurrency = localStorage.getItem('userCurrency');
+      if (storedCurrency && CURRENCY_CONFIG[storedCurrency]) {
+        this.currentCurrency = storedCurrency;
+        return;
+      }
+
+      // Default to USD for production environment to avoid server-side detection
+      // Only attempt geolocation if explicitly requested by user
+      if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+        this.currentCurrency = DEFAULT_CURRENCY;
+        localStorage.setItem('userCurrency', this.currentCurrency);
+        
+        // Dispatch an event so components can update
+        window.dispatchEvent(new CustomEvent('currencyChanged', { 
+          detail: { currency: this.currentCurrency }
+        }));
+        return;
+      }
+
       // Try browser's navigator.language first (quick but less accurate)
       const browserLocale = navigator.language || navigator.userLanguage;
       if (browserLocale) {
         const country = browserLocale.split('-')[1]?.toUpperCase();
         if (country && COUNTRY_CURRENCY[country]) {
           this.currentCurrency = COUNTRY_CURRENCY[country];
+          localStorage.setItem('userCurrency', this.currentCurrency);
+          
+          // Dispatch an event so components can update
+          window.dispatchEvent(new CustomEvent('currencyChanged', { 
+            detail: { currency: this.currentCurrency }
+          }));
           return;
         }
       }
 
-      // Fall back to IP-based geolocation
-      const response = await fetch('https://ipapi.co/json/');
-      const data = await response.json();
-      
-      if (data && data.country) {
-        const country = data.country;
-        this.currentCurrency = COUNTRY_CURRENCY[country] || DEFAULT_CURRENCY;
+      // Fall back to IP-based geolocation only for localhost/development
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        const response = await fetch('https://ipapi.co/json/');
+        const data = await response.json();
+        
+        if (data && data.country) {
+          const country = data.country;
+          this.currentCurrency = COUNTRY_CURRENCY[country] || DEFAULT_CURRENCY;
+        }
       }
     } catch (error) {
       console.error("Error detecting user currency:", error);

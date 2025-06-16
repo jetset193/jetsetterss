@@ -400,77 +400,149 @@ function FlightSearchPage() {
   const transformFlightData = (data) => {
     if (!data || !Array.isArray(data)) return [];
 
-    return data.map(offer => {
-      const itinerary = offer.itineraries[0];
-      const segments = itinerary.segments;
-      const firstSegment = segments[0];
-      const lastSegment = segments[segments.length - 1];
-      const price = offer.price;
+    return data.map(flight => {
+      // Check if this is our API format (simple) or Amadeus format (complex)
+      if (flight.itineraries) {
+        // Handle Amadeus API format (existing logic)
+        const itinerary = flight.itineraries[0];
+        const segments = itinerary.segments;
+        const firstSegment = segments[0];
+        const lastSegment = segments[segments.length - 1];
+        const price = flight.price;
 
-      return {
-        id: offer.id,
-        airline: {
-          code: firstSegment.carrierCode,
-          name: airlineMap[firstSegment.carrierCode] || firstSegment.carrierCode,
-          logo: `/images/airlines/${firstSegment.carrierCode.toLowerCase()}.png`
-        },
-        departure: {
-          time: new Date(firstSegment.departure.at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-          date: new Date(firstSegment.departure.at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-          airport: firstSegment.departure.iataCode,
-          terminal: firstSegment.departure.terminal || 'T1',
-          cityName: cityMap[firstSegment.departure.iataCode] || firstSegment.departure.iataCode
-        },
-        arrival: {
-          time: new Date(lastSegment.arrival.at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-          date: new Date(lastSegment.arrival.at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-          airport: lastSegment.arrival.iataCode,
-          terminal: lastSegment.arrival.terminal || 'T1',
-          cityName: cityMap[lastSegment.arrival.iataCode] || lastSegment.arrival.iataCode
-        },
-        duration: itinerary.duration,
-        stops: segments.length - 1,
-        price: {
-          amount: parseFloat(price.total),
-          total: price.total,
-          currency: price.currency || 'INR',
-          base: price.base,
-          fees: price.fees,
-          formatted: `$${parseFloat(price.total).toLocaleString('en-US')}`
-        },
-        amenities: offer.travelerPricings[0].fareDetailsBySegment[0].amenities || [],
-        baggage: {
-          checked: offer.travelerPricings[0].fareDetailsBySegment[0].includedCheckedBags || { weight: 0, weightUnit: 'KG' },
-          cabin: offer.travelerPricings[0].fareDetailsBySegment[0].includedCabinBags || { weight: 0, weightUnit: 'KG' }
-        },
-        cabin: offer.travelerPricings[0].fareDetailsBySegment[0].cabin || 'ECONOMY',
-        class: offer.travelerPricings[0].fareDetailsBySegment[0].class || 'ECONOMY',
-        segments: segments.map(segment => ({
+        return {
+          id: flight.id,
+          airline: {
+            code: firstSegment.carrierCode,
+            name: airlineMap[firstSegment.carrierCode] || firstSegment.carrierCode,
+            logo: `/images/airlines/${firstSegment.carrierCode.toLowerCase()}.png`
+          },
           departure: {
-            time: new Date(segment.departure.at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-            airport: segment.departure.iataCode,
-            terminal: segment.departure.terminal || 'T1',
-            cityName: cityMap[segment.departure.iataCode] || segment.departure.iataCode,
-            at: segment.departure.at
+            time: new Date(firstSegment.departure.at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+            date: new Date(firstSegment.departure.at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+            airport: firstSegment.departure.iataCode,
+            terminal: firstSegment.departure.terminal || 'T1',
+            cityName: cityMap[firstSegment.departure.iataCode] || firstSegment.departure.iataCode
           },
           arrival: {
-            time: new Date(segment.arrival.at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-            airport: segment.arrival.iataCode,
-            terminal: segment.arrival.terminal || 'T1',
-            cityName: cityMap[segment.arrival.iataCode] || segment.arrival.iataCode,
-            at: segment.arrival.at
+            time: new Date(lastSegment.arrival.at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+            date: new Date(lastSegment.arrival.at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+            airport: lastSegment.arrival.iataCode,
+            terminal: lastSegment.arrival.terminal || 'T1',
+            cityName: cityMap[lastSegment.arrival.iataCode] || lastSegment.arrival.iataCode
           },
+          duration: itinerary.duration,
+          stops: segments.length - 1,
+          price: {
+            amount: parseFloat(price.total),
+            total: price.total,
+            currency: price.currency || 'INR',
+            base: price.base,
+            fees: price.fees,
+            formatted: `$${parseFloat(price.total).toLocaleString('en-US')}`
+          },
+          amenities: flight.travelerPricings[0].fareDetailsBySegment[0].amenities || [],
+          baggage: {
+            checked: flight.travelerPricings[0].fareDetailsBySegment[0].includedCheckedBags || { weight: 0, weightUnit: 'KG' },
+            cabin: flight.travelerPricings[0].fareDetailsBySegment[0].includedCabinBags || { weight: 0, weightUnit: 'KG' }
+          },
+          cabin: flight.travelerPricings[0].fareDetailsBySegment[0].cabin || 'ECONOMY',
+          class: flight.travelerPricings[0].fareDetailsBySegment[0].class || 'ECONOMY',
+          segments: segments.map(segment => ({
+            departure: {
+              time: new Date(segment.departure.at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+              airport: segment.departure.iataCode,
+              terminal: segment.departure.terminal || 'T1',
+              cityName: cityMap[segment.departure.iataCode] || segment.departure.iataCode,
+              at: segment.departure.at
+            },
+            arrival: {
+              time: new Date(segment.arrival.at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+              airport: segment.arrival.iataCode,
+              terminal: segment.arrival.terminal || 'T1',
+              cityName: cityMap[segment.arrival.iataCode] || segment.arrival.iataCode,
+              at: segment.arrival.at
+            },
+            airline: {
+              code: segment.carrierCode,
+              name: airlineMap[segment.carrierCode] || segment.carrierCode,
+              logo: `/images/airlines/${segment.carrierCode.toLowerCase()}.png`
+            },
+            duration: segment.duration,
+            flightNumber: `${segment.carrierCode} ${segment.number}`,
+            aircraft: aircraftMap[segment.aircraft?.code] || segment.aircraft?.code || 'Unknown Aircraft',
+            stops: 0
+          }))
+        };
+      } else {
+        // Handle our simple API format
+        return {
+          id: flight.id,
           airline: {
-            code: segment.carrierCode,
-            name: airlineMap[segment.carrierCode] || segment.carrierCode,
-            logo: `/images/airlines/${segment.carrierCode.toLowerCase()}.png`
+            code: flight.airlineCode,
+            name: flight.airline,
+            logo: `/images/airlines/${flight.airlineCode.toLowerCase()}.png`
           },
-          duration: segment.duration,
-          flightNumber: `${segment.carrierCode} ${segment.number}`,
-          aircraft: aircraftMap[segment.aircraft?.code] || segment.aircraft?.code || 'Unknown Aircraft',
-          stops: 0
-        }))
-      };
+          departure: {
+            time: flight.departure.time,
+            date: new Date(flight.departure.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+            airport: flight.departure.airport,
+            terminal: flight.departure.terminal || 'T1',
+            cityName: cityMap[flight.departure.airport] || flight.departure.airport
+          },
+          arrival: {
+            time: flight.arrival.time,
+            date: new Date(flight.arrival.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+            airport: flight.arrival.airport,
+            terminal: flight.arrival.terminal || 'T1',
+            cityName: cityMap[flight.arrival.airport] || flight.arrival.airport
+          },
+          duration: flight.duration,
+          stops: flight.stops || 0,
+          price: {
+            amount: flight.price.amount,
+            total: flight.price.total,
+            currency: flight.price.currency || 'INR',
+            formatted: `₹${flight.price.amount.toLocaleString('en-IN')}`
+          },
+          amenities: [],
+          baggage: {
+            checked: { weight: parseInt(flight.baggage) || 0, weightUnit: 'KG' },
+            cabin: { weight: 7, weightUnit: 'KG' }
+          },
+          cabin: flight.cabin || 'Economy',
+          class: flight.cabin || 'Economy',
+          aircraft: flight.aircraft || 'Unknown',
+          flightNumber: flight.flightNumber,
+          refundable: flight.refundable || false,
+          seats: flight.seats || 0,
+          segments: [{
+            departure: {
+              time: flight.departure.time,
+              airport: flight.departure.airport,
+              terminal: flight.departure.terminal || 'T1',
+              cityName: cityMap[flight.departure.airport] || flight.departure.airport,
+              at: `${flight.departure.date}T${flight.departure.time}:00`
+            },
+            arrival: {
+              time: flight.arrival.time,
+              airport: flight.arrival.airport,
+              terminal: flight.arrival.terminal || 'T1',
+              cityName: cityMap[flight.arrival.airport] || flight.arrival.airport,
+              at: `${flight.arrival.date}T${flight.arrival.time}:00`
+            },
+            airline: {
+              code: flight.airlineCode,
+              name: flight.airline,
+              logo: `/images/airlines/${flight.airlineCode.toLowerCase()}.png`
+            },
+            duration: flight.duration,
+            flightNumber: flight.flightNumber,
+            aircraft: flight.aircraft || 'Unknown Aircraft',
+            stops: 0
+          }]
+        };
+      }
     });
   };
 
@@ -1910,7 +1982,8 @@ const FlightSearchForm = ({ initialData, onSearch }) => {
                                   className="w-10 h-10 object-contain"
                                   onError={(e) => {
                                     e.target.onerror = null;
-                                    e.target.src = 'https://via.placeholder.com/40?text=✈️';
+                                    // Use a data URL for the airplane emoji as fallback
+                                    e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0iIzM3NzNmNCIvPgo8dGV4dCB4PSIyMCIgeT0iMjgiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPuKciO+4jzwvdGV4dD4KPHN2Zz4K';
                                   }}
                                 />
                               </div>
