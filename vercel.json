@@ -1,5 +1,25 @@
 {
     "version": 2,
+    "routes": [
+        {
+            "src": "/assets/(.*)",
+            "headers": {
+                "cache-control": "public, max-age=31536000, immutable"
+            },
+            "dest": "/assets/$1"
+        },
+        {
+            "src": "/(.*)\\.(js|css|json|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot)$",
+            "headers": {
+                "cache-control": "public, max-age=31536000, immutable"
+            },
+            "dest": "/$1"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/index.html"
+        }
+    ],
     "env": {
         "NODE_ENV": "production",
         "JWT_EXPIRE": "30d",
