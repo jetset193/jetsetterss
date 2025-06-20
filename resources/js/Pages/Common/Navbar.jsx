@@ -85,7 +85,7 @@ const Navbar = ({ forceScrolled }) => {
 
       {/* Desktop navigation */}
       <div className="navbar-center">
-        <Link to="/" className="nav-link">
+        <Link to="/welcome" className="nav-link">
           Cruise
         </Link>
         <Link to="/flights" className="nav-link">

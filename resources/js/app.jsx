@@ -706,7 +706,8 @@ const App = () => {
   return (
     <React.Suspense fallback={<LoadingComponent />}>
       <Routes>
-        <Route path="/" element={<Welcome />} />
+        <Route path="/" element={<FlightLanding />} />
+        <Route path="/welcome" element={<Welcome />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
