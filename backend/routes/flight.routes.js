@@ -1,86 +1,131 @@
 import express from 'express';
-import Amadeus from 'amadeus';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import AmadeusService from '../services/amadeusService.js';
 
 const router = express.Router();
 
-// Initialize Amadeus client with fallback options for different environment variable formats
+// Helper function to get Amadeus credentials
 const getAmadeusCredentials = () => {
-  // Try backend variables first (recommended for server-side code)
   const apiKey = process.env.AMADEUS_API_KEY || process.env.REACT_APP_AMADEUS_API_KEY;
   const apiSecret = process.env.AMADEUS_API_SECRET || process.env.REACT_APP_AMADEUS_API_SECRET;
   
-  // Log which variables we're using
   const keySource = process.env.AMADEUS_API_KEY ? 'AMADEUS_API_KEY' : 
-                  (process.env.REACT_APP_AMADEUS_API_KEY ? 'REACT_APP_AMADEUS_API_KEY' : 'None');
+    (process.env.REACT_APP_AMADEUS_API_KEY ? 'REACT_APP_AMADEUS_API_KEY' : 'None');
   const secretSource = process.env.AMADEUS_API_SECRET ? 'AMADEUS_API_SECRET' : 
-                     (process.env.REACT_APP_AMADEUS_API_SECRET ? 'REACT_APP_AMADEUS_API_SECRET' : 'None');
+    (process.env.REACT_APP_AMADEUS_API_SECRET ? 'REACT_APP_AMADEUS_API_SECRET' : 'None');
   
-  console.log(`Using Amadeus credentials from: key=${keySource}, secret=${secretSource}`);
+  console.log('Amadeus credentials source:', { keySource, secretSource });
   
   return { apiKey, apiSecret };
 };
 
-const { apiKey, apiSecret } = getAmadeusCredentials();
-
-// Initialize Amadeus client
-const amadeus = new Amadeus({
-  clientId: apiKey,
-  clientSecret: apiSecret
-});
-
-console.log('Amadeus client initialized with:', {
-  clientId: apiKey,
-  clientSecret: apiSecret?.substring(0, 4) + '...' // Log only first 4 chars of secret
-});
+// Transform Amadeus API response to frontend format
+const transformAmadeusFlightData = (amadeusFlights, dictionaries = {}) => {
+  if (!amadeusFlights || amadeusFlights.length === 0) return [];
+  
+  const airlines = dictionaries?.carriers || {};
+  const airports = dictionaries?.locations || {};
+  const aircraft = dictionaries?.aircraft || {};
+  
+  return amadeusFlights.map(flight => {
+    try {
+      const firstItinerary = flight.itineraries?.[0];
+      const firstSegment = firstItinerary?.segments?.[0];
+      const lastSegment = firstItinerary?.segments?.[firstItinerary.segments.length - 1];
+      
+      if (!firstSegment || !lastSegment) {
+        console.warn('Invalid flight segment data:', flight);
+        return null;
+      }
+      
+      // Calculate total duration
+      let totalDuration = 'Unknown';
+      if (firstItinerary?.duration) {
+        const durationMatch = firstItinerary.duration.match(/PT(\d+H)?(\d+M)?/);
+        if (durationMatch) {
+          const hours = durationMatch[1] ? parseInt(durationMatch[1]) : 0;
+          const minutes = durationMatch[2] ? parseInt(durationMatch[2]) : 0;
+          totalDuration = `${hours}h ${minutes}m`;
+        }
+      }
+      
+      // Get airline name
+      const carrierCode = firstSegment.carrierCode;
+      const airlineName = airlines[carrierCode] || carrierCode;
+      
+      // Format departure and arrival
+      const departure = {
+        time: new Date(firstSegment.departure.at).toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          hour12: false 
+        }),
+        airport: firstSegment.departure.iataCode,
+        terminal: firstSegment.departure.terminal || '',
+        date: firstSegment.departure.at.split('T')[0]
+      };
+      
+      const arrival = {
+        time: new Date(lastSegment.arrival.at).toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          hour12: false 
+        }),
+        airport: lastSegment.arrival.iataCode,
+        terminal: lastSegment.arrival.terminal || '',
+        date: lastSegment.arrival.at.split('T')[0]
+      };
+      
+      // Calculate stops
+      const stops = Math.max(0, firstItinerary.segments.length - 1);
+      
+      // Get pricing info
+      const price = {
+        total: flight.price?.total || '0',
+        amount: parseFloat(flight.price?.total || 0),
+        currency: flight.price?.currency || 'USD'
+      };
+      
+      // Get traveler pricing for cabin class
+      const travelerPricing = flight.travelerPricings?.[0];
+      const fareDetails = travelerPricing?.fareDetailsBySegment?.[0];
+      const cabin = fareDetails?.cabin || 'ECONOMY';
+      
+      return {
+        id: flight.id,
+        airline: airlineName,
+        airlineCode: carrierCode,
+        flightNumber: `${carrierCode}-${firstSegment.number}`,
+        price: price,
+        duration: totalDuration,
+        departure: departure,
+        arrival: arrival,
+        stops: stops,
+        stopDetails: stops > 0 ? firstItinerary.segments.slice(0, -1).map(seg => ({
+          airport: seg.arrival.iataCode,
+          duration: seg.duration || 'Unknown'
+        })) : [],
+        aircraft: aircraft[firstSegment.aircraft?.code] || firstSegment.aircraft?.code || 'Unknown',
+        cabin: cabin,
+        baggage: fareDetails?.includedCheckedBags?.weight 
+          ? `${fareDetails.includedCheckedBags.weight}${fareDetails.includedCheckedBags.weightUnit || 'kg'}`
+          : '23kg',
+        refundable: travelerPricing?.price?.refundableTaxes ? true : false,
+        seats: 'Available',
+        originalOffer: flight // Keep original for booking
+      };
+    } catch (error) {
+      console.error('Error transforming flight offer:', error);
+      return null;
+    }
+  }).filter(Boolean);
+};
 
 // Flight search endpoint
 router.post('/search', async (req, res) => {
   try {
-    // Check if Amadeus credentials are available
-    const { apiKey, apiSecret } = getAmadeusCredentials();
-    console.log('Checking Amadeus credentials:', {
-      key: apiKey ? 'Available' : 'Missing',
-      secret: apiSecret ? 'Available' : 'Missing'
-    });
-    
-    if (!apiKey || !apiSecret) {
-      console.error('Missing Amadeus API credentials');
-      
-      // Return mock data when credentials are missing
-      return res.json({
-        success: true,
-        data: [{
-          id: "1",
-          price: { total: "126.99", amount: 126.99, currency: "EUR" },
-          itineraries: [{
-            duration: "PT3H",
-            segments: [{
-              departure: { at: "2025-05-29T06:00:00", iataCode: "DEL", terminal: "3" },
-              arrival: { at: "2025-05-29T08:00:00", iataCode: "DXB", terminal: "2" },
-              carrierCode: "EK",
-              number: "517",
-              aircraft: { code: "77W" },
-              operating: { carrierCode: "EK" }
-            }]
-          }],
-          travelerPricings: [{
-            travelerId: "1",
-            fareDetailsBySegment: [{
-              cabin: "ECONOMY",
-              class: "K"
-            }]
-          }]
-        }]
-      });
-    }
+    console.log('🔍 Flight search request received:', req.body);
     
     const { from, to, departDate, returnDate, tripType, travelers } = req.body;
-
-    // Log request payload for debugging
-    console.log('Flight search request body:', req.body);
 
     // Validate required fields
     if (!from || !to || !departDate) {
@@ -90,114 +135,85 @@ router.post('/search', async (req, res) => {
       });
     }
 
-    console.log('Searching flights with params:', { from, to, departDate, returnDate, tripType, travelers });
-
-    // Prepare Amadeus API parameters
-    const amadeusParams = {
-      originLocationCode: from,
-      destinationLocationCode: to,
-      departureDate: departDate,
-      adults: parseInt(travelers) || 1,
-      max: 10
-    };
-
-    // Only add returnDate if it's provided and not empty
-    if (returnDate && returnDate.trim() !== '') {
-      amadeusParams.returnDate = returnDate;
+    // Check if Amadeus credentials are available
+    const { apiKey, apiSecret } = getAmadeusCredentials();
+    console.log('Checking Amadeus credentials:', {
+      key: apiKey ? 'Available' : 'Missing',
+      secret: apiSecret ? 'Available' : 'Missing'
+    });
+    
+    if (!apiKey || !apiSecret) {
+      console.error('❌ Missing Amadeus API credentials');
+      return res.status(500).json({
+        success: false,
+        error: 'Amadeus API credentials not configured. Please contact support.'
+      });
     }
 
-    console.log('Calling Amadeus API with params:', amadeusParams);
+    console.log('✅ Amadeus credentials found, proceeding with real API call');
+
+    // Prepare search parameters
+    const searchParams = {
+      from,
+      to,
+      departDate,
+      returnDate: returnDate && returnDate.trim() !== '' ? returnDate : undefined,
+      travelers: parseInt(travelers) || 1,
+      max: 20
+    };
+
+    console.log('Searching flights with params:', searchParams);
 
     try {
-      // Call Amadeus API
-      const response = await amadeus.shopping.flightOffersSearch.get(amadeusParams);
-      console.log('Amadeus API response:', response);
+      // Call real Amadeus API
+      const amadeusResponse = await AmadeusService.searchFlights(searchParams);
+      
+      if (!amadeusResponse.success) {
+        throw new Error(amadeusResponse.error);
+      }
 
-      if (!response.data || response.data.length === 0) {
+      console.log(`✅ Amadeus API returned ${amadeusResponse.data?.length || 0} flight offers`);
+
+      if (!amadeusResponse.data || amadeusResponse.data.length === 0) {
         return res.json({
           success: true,
-          data: []
+          data: [],
+          message: 'No flights found for the specified route and date.'
         });
       }
 
-      // Transform Amadeus response to our format
-      const flights = response.data.map(offer => {
-        try {
-          return {
-            id: offer.id,
-            price: {
-              total: offer.price?.total || '0',
-              amount: parseFloat(offer.price?.total || '0'),
-              currency: offer.price?.currency || 'USD',
-              base: offer.price?.base || '0',
-              fees: offer.price?.fees || []
-            },
-            itineraries: offer.itineraries.map(itinerary => ({
-              duration: itinerary.duration,
-              segments: itinerary.segments.map(segment => ({
-                departure: {
-                  at: segment.departure.at,
-                  iataCode: segment.departure.iataCode,
-                  terminal: segment.departure.terminal || 'T1',
-                  city: segment.departure.iataCode
-                },
-                arrival: {
-                  at: segment.arrival.at,
-                  iataCode: segment.arrival.iataCode,
-                  terminal: segment.arrival.terminal || 'T1',
-                  city: segment.arrival.iataCode
-                },
-                duration: segment.duration,
-                carrierCode: segment.carrierCode,
-                number: segment.number,
-                aircraft: segment.aircraft?.code || 'Unknown',
-                operating: segment.operating,
-                cabin: offer.travelerPricings?.[0]?.fareDetailsBySegment?.[0]?.cabin || 'ECONOMY',
-                class: offer.travelerPricings?.[0]?.fareDetailsBySegment?.[0]?.class || 'ECONOMY',
-                baggage: {
-                  checked: offer.travelerPricings?.[0]?.fareDetailsBySegment?.[0]?.includedCheckedBags || { weight: 0, weightUnit: 'KG' },
-                  cabin: offer.travelerPricings?.[0]?.fareDetailsBySegment?.[0]?.includedCabinBags || { weight: 0, weightUnit: 'KG' }
-                }
-              }))
-            })),
-            travelerPricings: offer.travelerPricings?.map(pricing => ({
-              travelerId: pricing.travelerId,
-              fareDetailsBySegment: pricing.fareDetailsBySegment?.map(segment => ({
-                segmentId: segment.segmentId,
-                cabin: segment.cabin || 'ECONOMY',
-                class: segment.class || 'ECONOMY',
-                includedCheckedBags: segment.includedCheckedBags || { weight: 0, weightUnit: 'KG' },
-                includedCabinBags: segment.includedCabinBags || { weight: 0, weightUnit: 'KG' },
-                amenities: segment.amenities || []
-              })) || []
-            })) || []
-          };
-        } catch (transformError) {
-          console.error('Error transforming flight offer:', transformError);
-          return null;
-        }
-      }).filter(Boolean); // Remove any null entries from failed transformations
+      // Transform Amadeus response to frontend format
+      const transformedFlights = transformAmadeusFlightData(
+        amadeusResponse.data, 
+        amadeusResponse.dictionaries
+      );
+
+      console.log(`✅ Transformed ${transformedFlights.length} flights for frontend`);
 
       res.json({
         success: true,
-        data: flights
+        data: transformedFlights,
+        meta: {
+          searchParams: searchParams,
+          resultCount: transformedFlights.length,
+          totalResults: amadeusResponse.data.length,
+          source: 'amadeus-production-api'
+        }
       });
+
     } catch (amadeusError) {
-      console.error('Amadeus API error:', amadeusError);
-      console.error('Error details:', {
-        message: amadeusError.message,
-        code: amadeusError.code,
-        response: amadeusError.response?.data
-      });
+      console.error('❌ Amadeus API error:', amadeusError);
       
+      // Return detailed error information
       return res.status(500).json({
         success: false,
-        error: amadeusError.message || 'Error calling Amadeus API',
-        details: amadeusError.response?.data || {}
+        error: 'Flight search failed',
+        details: amadeusError.message || 'Unable to search flights at this time',
+        code: amadeusError.code || 500
       });
     }
   } catch (error) {
-    console.error('Error in flight search:', error);
+    console.error('❌ Error in flight search:', error);
     res.status(500).json({
       success: false,
       error: error.message || 'Internal server error'
@@ -205,84 +221,152 @@ router.post('/search', async (req, res) => {
   }
 });
 
-// Flight booking endpoint
-router.post('/booking/flight-orders', async (req, res) => {
+// Flight pricing endpoint
+router.post('/price', async (req, res) => {
   try {
-    const { travelerDetails, contactInfo, flightOffer } = req.body;
-
-    // Validate required fields
-    if (!contactInfo || !flightOffer) {
+    console.log('💰 Flight pricing request received');
+    
+    const { flightOffer } = req.body;
+    
+    if (!flightOffer) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: contactInfo and flightOffer are required'
+        error: 'Flight offer is required for pricing'
       });
     }
 
-    console.log('Creating flight order with:', { travelerDetails, contactInfo, flightOffer });
-
-    // Check if travelerDetails is empty and provide defaults
-    let travelers = travelerDetails;
-    if (!travelerDetails || travelerDetails.length === 0) {
-      console.log('No traveler details provided, using defaults');
-      travelers = [{
-        id: "1",
-        firstName: "Test",
-        lastName: "User",
-        dateOfBirth: "1990-01-01",
-        gender: "MALE"
-      }];
+    const pricingResponse = await AmadeusService.priceFlightOffer(flightOffer);
+    
+    if (!pricingResponse.success) {
+      throw new Error(pricingResponse.error);
     }
 
-    // For testing purposes, simulate successful booking since full Amadeus booking 
-    // requires production credentials and specific valid flight offer IDs
-    console.log('✅ Flight booking created successfully (simulated)');
-    
-    const bookingReference = `BOOK-${Date.now()}`;
-    const pnr = `PNR${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-    
-    // Return simulated booking confirmation
     res.json({
       success: true,
-      data: {
-        pnr: pnr,
-        bookingReference: bookingReference,
-        status: 'CONFIRMED',
-        travelers: travelers.map(traveler => ({
-          id: traveler.id,
-          name: {
-            firstName: traveler.firstName,
-            lastName: traveler.lastName
-          },
-          dateOfBirth: traveler.dateOfBirth,
-          gender: traveler.gender
-        })),
-        flightOffers: [flightOffer],
-        createdAt: new Date().toISOString(),
-        ticketingAgreement: {
-          option: 'CONFIRM',
-          delay: 'P1D'
-        },
-        contacts: [{
-          addresseeName: {
-            firstName: travelers[0].firstName,
-            lastName: travelers[0].lastName
-          },
-          companyName: 'JetSet Go',
-          purpose: 'STANDARD',
-          phones: [{
-            deviceType: 'MOBILE',
-            countryCallingCode: contactInfo.countryCode,
-            number: contactInfo.phoneNumber
-          }],
-          emailAddress: contactInfo.email
-        }]
-      }
+      data: pricingResponse.data,
+      message: 'Flight priced successfully'
     });
+
   } catch (error) {
-    console.error('Error in flight booking:', error);
+    console.error('❌ Flight pricing error:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Internal server error'
+      error: error.message || 'Failed to price flight'
+    });
+  }
+});
+
+// Flight order creation endpoint
+router.post('/order', async (req, res) => {
+  try {
+    console.log('📋 REAL flight order creation request received');
+    
+    const { flightOffers, travelers, payments } = req.body;
+    
+    if (!flightOffers || !travelers) {
+      return res.status(400).json({
+        success: false,
+        error: 'Flight offers and travelers are required'
+      });
+    }
+
+    // Prepare flight order data for Amadeus
+    const flightOrderData = {
+      data: {
+        type: 'flight-order',
+        flightOffers: flightOffers,
+        travelers: travelers,
+        contacts: {
+          emailAddress: travelers[0]?.contact?.emailAddress || req.body.contactEmail,
+          phones: [{
+            deviceType: 'MOBILE',
+            countryCallingCode: '91',
+            number: travelers[0]?.contact?.phones?.[0]?.number || req.body.contactPhone
+          }]
+        }
+      }
+    };
+
+    console.log('🚀 Attempting REAL Amadeus booking...');
+    const orderResponse = await AmadeusService.createFlightOrder(flightOrderData);
+    
+    console.log('✅ REAL booking successful!');
+    
+    res.json({
+      success: true,
+      data: orderResponse.data,
+      pnr: orderResponse.pnr,
+      mode: orderResponse.mode,
+      message: 'REAL flight booking created with actual airline PNR'
+    });
+
+  } catch (error) {
+    console.error('❌ REAL flight order creation failed:', error);
+    
+    // Return detailed error information for real booking failures
+    res.status(error.code || 500).json({
+      success: false,
+      error: error.error || 'Real flight booking failed',
+      solution: error.solution || 'Check Amadeus API documentation',
+      amadeusError: error.amadeusError,
+      details: error.details,
+      message: 'Real booking failed - no simulation fallback available'
+    });
+  }
+});
+
+// Get flight order details (REAL ONLY - no simulation)
+router.get('/order/:orderId', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    console.log(`📋 Retrieving REAL order details for: ${orderId}`);
+    
+    const orderDetails = await AmadeusService.getFlightOrderDetails(orderId);
+    
+    if (!orderDetails.success) {
+      throw new Error(orderDetails.error);
+    }
+    
+    res.json({
+      success: true,
+      data: orderDetails.data,
+      pnr: orderDetails.data.associatedRecords?.[0]?.reference,
+      mode: 'LIVE_AMADEUS_DATA',
+      message: 'Real flight order details retrieved from Amadeus'
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching REAL flight order details:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve real order details from Amadeus',
+      details: error.message,
+      message: 'Real order retrieval failed - no simulation available'
+    });
+  }
+});
+
+// Health check endpoint
+router.get('/health', async (req, res) => {
+  try {
+    const { apiKey, apiSecret } = getAmadeusCredentials();
+    
+    res.json({
+      success: true,
+      service: 'Flight API',
+      status: 'operational',
+      credentials: {
+        configured: !!(apiKey && apiSecret),
+        keySource: apiKey ? 'Available' : 'Missing',
+        secretSource: apiSecret ? 'Available' : 'Missing'
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });

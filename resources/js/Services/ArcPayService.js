@@ -1,11 +1,9 @@
 import axios from 'axios';
 
-// Use the Vercel API endpoints for ARC Pay integration
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
-
+// Use the API endpoints for ARC Pay integration - use relative URLs to go through Vite proxy
 class ArcPayService {
     constructor() {
-        this.apiUrl = `${API_BASE_URL}/payments`;
+        this.apiUrl = '/api/payments';
         this.api = axios.create({
             baseURL: this.apiUrl,
             headers: {
@@ -19,7 +17,7 @@ class ArcPayService {
     async checkGatewayStatus() {
         try {
             console.log('🔍 Checking ARC Pay Gateway status...');
-            const response = await this.api.get('?action=gateway-status');
+            const response = await this.api.get('/gateway/status');
             return {
                 success: true,
                 data: response.data,
@@ -39,7 +37,7 @@ class ArcPayService {
     async createSession() {
         try {
             console.log('🚀 Creating payment session...');
-            const response = await this.api.post('?action=session-create');
+            const response = await this.api.post('/session/create');
             return {
                 success: true,
                 sessionData: response.data.sessionData,
@@ -70,7 +68,7 @@ class ArcPayService {
                 cancelUrl: paymentData.cancelUrl
             };
 
-            const response = await this.api.post('?action=order-create', orderPayload);
+            const response = await this.api.post('/order/create', orderPayload);
             
             return {
                 success: true,
@@ -94,17 +92,30 @@ class ArcPayService {
             
             const paymentPayload = {
                 orderId: orderId,
+                amount: paymentData.amount || 100,
                 cardDetails: {
                     cardNumber: paymentData.cardDetails?.cardNumber,
                     expiryDate: paymentData.cardDetails?.expiryDate,
                     cvv: paymentData.cardDetails?.cvv,
                     cardHolder: paymentData.cardDetails?.cardHolder
                 },
-                billingAddress: paymentData.billingAddress,
+                customerInfo: {
+                    firstName: paymentData.customerInfo?.firstName || paymentData.cardDetails?.cardHolder?.split(' ')[0] || 'Test',
+                    lastName: paymentData.customerInfo?.lastName || paymentData.cardDetails?.cardHolder?.split(' ').slice(1).join(' ') || 'User',
+                    email: paymentData.customerInfo?.email || 'test@jetsetgo.com',
+                    phone: paymentData.customerInfo?.phone || '1234567890'
+                },
+                billingAddress: paymentData.billingAddress || {
+                    street: "123 Test Street",
+                    city: "Test City",
+                    state: "Test State",
+                    countryCode: "US",
+                    postalCode: "12345"
+                },
                 browserData: paymentData.browserData
             };
 
-            const response = await this.api.post('?action=payment-process', paymentPayload);
+            const response = await this.api.post('/payment/process', paymentPayload);
             
             return {
                 success: response.data.success,
@@ -126,7 +137,7 @@ class ArcPayService {
         try {
             console.log('🔍 Verifying payment for order:', orderId);
             
-            const response = await this.api.get(`?action=payment-verify&orderId=${orderId}`);
+            const response = await this.api.get(`/payment/verify/${orderId}`);
             
             return {
                 success: true,
@@ -154,7 +165,7 @@ class ArcPayService {
                 reason: reason
             };
 
-            const response = await this.api.post('?action=payment-refund', refundPayload);
+            const response = await this.api.post('/payment/refund', refundPayload);
             
             return {
                 success: response.data.success,
@@ -176,7 +187,7 @@ class ArcPayService {
         try {
             console.log('🧪 Testing ARC Pay integration...');
             
-            const response = await this.api.post('?action=test');
+            const response = await this.api.post('/test');
             
             return {
                 success: true,

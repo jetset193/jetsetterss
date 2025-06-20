@@ -205,11 +205,18 @@ function FlightPayment() {
         }
 
         const processData = {
+          amount: finalAmount,
           cardDetails: {
             cardNumber: cardDetails.cardNumber,
             cardHolder: cardDetails.cardHolder,
             expiryDate: cardDetails.expiryDate,
             cvv: cardDetails.cvv
+          },
+          customerInfo: {
+            firstName: paymentData?.passengerData?.[0]?.firstName || cardDetails.cardHolder.split(' ')[0] || 'Test',
+            lastName: paymentData?.passengerData?.[0]?.lastName || cardDetails.cardHolder.split(' ').slice(1).join(' ') || 'User',
+            email: paymentData?.passengerData?.[0]?.email || 'test@jetsetgo.com',
+            phone: paymentData?.passengerData?.[0]?.phone || '1234567890'
           },
           billingAddress: {
             street: "123 Test Street",

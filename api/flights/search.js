@@ -1,3 +1,5 @@
+import AmadeusService from '../../backend/services/amadeusService.js';
+
 export default async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -63,192 +65,72 @@ export default async function handler(req, res) {
       });
     }
 
-    console.log('✅ Validation passed. Searching flights...');
+    console.log('✅ Validation passed. Searching flights with Amadeus API...');
 
-    // For now, return mock flight data since we don't have Amadeus API configured
-    // This matches the format expected by the frontend
-    const mockFlights = [
-      {
-        id: "flight_1",
-        airline: "IndiGo",
-        airlineCode: "6E",
-        flightNumber: "6E-2135",
-        price: {
-          total: "4,250",
-          amount: 4250,
-          currency: "INR"
-        },
-        duration: "1h 25m",
-        departure: {
-          time: "06:00",
-          airport: from,
-          terminal: "T3",
-          date: departDate
-        },
-        arrival: {
-          time: "07:25",
-          airport: to,
-          terminal: "T1",
-          date: departDate
-        },
-        stops: 0,
-        stopDetails: [],
-        aircraft: "A320",
-        cabin: "Economy",
-        baggage: "15kg",
-        refundable: false,
-        seats: 89
-      },
-      {
-        id: "flight_2",
-        airline: "SpiceJet",
-        airlineCode: "SG",
-        flightNumber: "SG-8709",
-        price: {
-          total: "3,890",
-          amount: 3890,
-          currency: "INR"
-        },
-        duration: "1h 30m",
-        departure: {
-          time: "08:30",
-          airport: from,
-          terminal: "T3",
-          date: departDate
-        },
-        arrival: {
-          time: "10:00",
-          airport: to,
-          terminal: "T1",
-          date: departDate
-        },
-        stops: 0,
-        stopDetails: [],
-        aircraft: "B737",
-        cabin: "Economy",
-        baggage: "15kg",
-        refundable: true,
-        seats: 67
-      },
-      {
-        id: "flight_3",
-        airline: "Air India",
-        airlineCode: "AI",
-        flightNumber: "AI-9613",
-        price: {
-          total: "5,120",
-          amount: 5120,
-          currency: "INR"
-        },
-        duration: "1h 20m",
-        departure: {
-          time: "11:15",
-          airport: from,
-          terminal: "T3",
-          date: departDate
-        },
-        arrival: {
-          time: "12:35",
-          airport: to,
-          terminal: "T1",
-          date: departDate
-        },
-        stops: 0,
-        stopDetails: [],
-        aircraft: "A321",
-        cabin: "Economy",
-        baggage: "25kg",
-        refundable: true,
-        seats: 42
-      },
-      {
-        id: "flight_4",
-        airline: "GoAir",
-        airlineCode: "G8",
-        flightNumber: "G8-2766",
-        price: {
-          total: "4,650",
-          amount: 4650,
-          currency: "INR"
-        },
-        duration: "1h 35m",
-        departure: {
-          time: "14:45",
-          airport: from,
-          terminal: "T3",
-          date: departDate
-        },
-        arrival: {
-          time: "16:20",
-          airport: to,
-          terminal: "T1",
-          date: departDate
-        },
-        stops: 0,
-        stopDetails: [],
-        aircraft: "A320",
-        cabin: "Economy",
-        baggage: "15kg",
-        refundable: false,
-        seats: 123
-      },
-      {
-        id: "flight_5",
-        airline: "Vistara",
-        airlineCode: "UK",
-        flightNumber: "UK-961",
-        price: {
-          total: "6,890",
-          amount: 6890,
-          currency: "INR"
-        },
-        duration: "1h 15m",
-        departure: {
-          time: "18:00",
-          airport: from,
-          terminal: "T3",
-          date: departDate
-        },
-        arrival: {
-          time: "19:15",
-          airport: to,
-          terminal: "T1",
-          date: departDate
-        },
-        stops: 0,
-        stopDetails: [],
-        aircraft: "A320",
-        cabin: "Economy",
-        baggage: "25kg",
-        refundable: true,
-        seats: 78
+    // Prepare search parameters for Amadeus API
+    const searchParams = {
+      from,
+      to,
+      departDate,
+      returnDate: returnDate && returnDate.trim() !== '' ? returnDate : undefined,
+      travelers: parseInt(travelers) || 1,
+      max: parseInt(max) || 10
+    };
+
+    try {
+      // Call real Amadeus API
+      const amadeusResponse = await AmadeusService.searchFlights(searchParams);
+      
+      if (!amadeusResponse.success) {
+        throw new Error(amadeusResponse.error);
       }
-    ];
 
-    // Sort flights by price (cheapest first)
-    const sortedFlights = mockFlights.sort((a, b) => a.price.amount - b.price.amount);
+      console.log(`✅ Amadeus API returned ${amadeusResponse.data?.length || 0} flight offers`);
 
-    // Limit results based on max parameter
-    const limitedFlights = sortedFlights.slice(0, parseInt(max) || 10);
-
-    console.log(`✅ Returning ${limitedFlights.length} flights`);
-
-    return res.status(200).json({
-      success: true,
-      data: limitedFlights,
-      meta: {
-        searchParams: {
-          from,
-          to,
-          departDate,
-          returnDate: returnDate || null,
-          travelers: parseInt(travelers) || 1,
-          tripType: tripType || 'oneWay'
-        },
-        resultCount: limitedFlights.length,
-        totalResults: mockFlights.length
+      if (!amadeusResponse.data || amadeusResponse.data.length === 0) {
+        console.log('No flights found for the search criteria');
+        return res.status(200).json({
+          success: true,
+          data: [],
+          meta: {
+            searchParams: searchParams,
+            resultCount: 0,
+            totalResults: 0,
+            source: 'amadeus-production-api',
+            message: 'No flights found for the specified route and date.'
+          }
+        });
       }
-    });
+
+      // Transform Amadeus response to frontend format
+      const transformedFlights = transformAmadeusFlightData(
+        amadeusResponse.data, 
+        amadeusResponse.dictionaries
+      );
+
+      console.log(`✅ Transformed ${transformedFlights.length} flights for frontend`);
+
+      return res.status(200).json({
+        success: true,
+        data: transformedFlights,
+        meta: {
+          searchParams: searchParams,
+          resultCount: transformedFlights.length,
+          totalResults: amadeusResponse.data.length,
+          source: 'amadeus-production-api'
+        }
+      });
+
+    } catch (amadeusError) {
+      console.error('❌ Amadeus API error:', amadeusError);
+      
+      return res.status(500).json({
+        success: false,
+        error: 'Flight search failed',
+        details: amadeusError.message || 'Unable to search flights at this time',
+        code: amadeusError.code || 500
+      });
+    }
 
   } catch (error) {
     console.error('❌ Flight search error:', error);
@@ -258,4 +140,106 @@ export default async function handler(req, res) {
       details: error.message
     });
   }
+}
+
+// Transform Amadeus API response to frontend format
+function transformAmadeusFlightData(amadeusFlights, dictionaries = {}) {
+  if (!amadeusFlights || amadeusFlights.length === 0) return [];
+  
+  const airlines = dictionaries?.carriers || {};
+  const airports = dictionaries?.locations || {};
+  const aircraft = dictionaries?.aircraft || {};
+  
+  return amadeusFlights.map(flight => {
+    try {
+      const firstItinerary = flight.itineraries?.[0];
+      const firstSegment = firstItinerary?.segments?.[0];
+      const lastSegment = firstItinerary?.segments?.[firstItinerary.segments.length - 1];
+      
+      if (!firstSegment || !lastSegment) {
+        console.warn('Invalid flight segment data:', flight);
+        return null;
+      }
+      
+      // Calculate total duration
+      let totalDuration = 'Unknown';
+      if (firstItinerary?.duration) {
+        const durationMatch = firstItinerary.duration.match(/PT(\d+H)?(\d+M)?/);
+        if (durationMatch) {
+          const hours = durationMatch[1] ? parseInt(durationMatch[1]) : 0;
+          const minutes = durationMatch[2] ? parseInt(durationMatch[2]) : 0;
+          totalDuration = `${hours}h ${minutes}m`;
+        }
+      }
+      
+      // Get airline name
+      const carrierCode = firstSegment.carrierCode;
+      const airlineName = airlines[carrierCode] || carrierCode;
+      
+      // Format departure and arrival times
+      const departure = {
+        time: new Date(firstSegment.departure.at).toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          hour12: false 
+        }),
+        airport: firstSegment.departure.iataCode,
+        terminal: firstSegment.departure.terminal || 'T1',
+        date: firstSegment.departure.at.split('T')[0]
+      };
+      
+      const arrival = {
+        time: new Date(lastSegment.arrival.at).toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          hour12: false 
+        }),
+        airport: lastSegment.arrival.iataCode,
+        terminal: lastSegment.arrival.terminal || 'T1',
+        date: lastSegment.arrival.at.split('T')[0]
+      };
+      
+      // Calculate stops
+      const stops = Math.max(0, firstItinerary.segments.length - 1);
+      
+      // Get pricing info
+      const price = {
+        total: flight.price?.total || '0',
+        amount: parseFloat(flight.price?.total || 0),
+        currency: flight.price?.currency || 'USD'
+      };
+      
+      // Get traveler pricing for cabin class
+      const travelerPricing = flight.travelerPricings?.[0];
+      const fareDetails = travelerPricing?.fareDetailsBySegment?.[0];
+      const cabin = fareDetails?.cabin || 'ECONOMY';
+      
+      return {
+        id: flight.id,
+        airline: airlineName,
+        airlineCode: carrierCode,
+        flightNumber: `${carrierCode}-${firstSegment.number}`,
+        price: price,
+        duration: totalDuration,
+        departure: departure,
+        arrival: arrival,
+        stops: stops,
+        stopDetails: stops > 0 ? firstItinerary.segments.slice(0, -1).map(seg => ({
+          airport: seg.arrival.iataCode,
+          duration: seg.duration || 'Unknown'
+        })) : [],
+        aircraft: aircraft[firstSegment.aircraft?.code] || firstSegment.aircraft?.code || 'Unknown',
+        cabin: cabin,
+        baggage: fareDetails?.includedCheckedBags?.weight 
+          ? `${fareDetails.includedCheckedBags.weight}${fareDetails.includedCheckedBags.weightUnit || 'kg'}`
+          : '23kg',
+        refundable: travelerPricing?.price?.refundableTaxes ? true : false,
+        seats: 'Available',
+        originalOffer: flight // Keep original for booking
+      };
+    } catch (error) {
+      console.error('Error transforming flight offer:', error);
+      return null;
+    }
+  }).filter(Boolean);
 } 

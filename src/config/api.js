@@ -23,7 +23,13 @@ const getApiBaseUrl = () => {
     const localApiUrl = import.meta.env?.VITE_API_URL;
     if (localApiUrl && localApiUrl.includes('localhost')) {
       console.log('Using local API URL from env:', localApiUrl);
-      return localApiUrl.endsWith('/') ? localApiUrl.slice(0, -1) : localApiUrl;
+      // Ensure the URL includes /api
+      if (localApiUrl.endsWith('/api')) {
+        return localApiUrl.endsWith('/') ? localApiUrl.slice(0, -1) : localApiUrl;
+      } else {
+        const cleanUrl = localApiUrl.endsWith('/') ? localApiUrl.slice(0, -1) : localApiUrl;
+        return `${cleanUrl}/api`;
+      }
     }
     
     // Fall back to default port
@@ -72,18 +78,13 @@ const API_BASE_URL = getApiBaseUrl();
 
 // Create endpoint URLs
 const createEndpoint = (path) => {
-  // If path starts with slash and API_BASE_URL ends with slash, 
-  // avoid double slash
-  if (path.startsWith('/') && API_BASE_URL.endsWith('/')) {
-    return `${API_BASE_URL}${path.substring(1)}`;
-  }
+  // Ensure path starts with slash
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   
-  // If neither has slash, add one
-  if (!path.startsWith('/') && !API_BASE_URL.endsWith('/')) {
-    return `${API_BASE_URL}/${path}`;
-  }
+  // Remove trailing slash from base URL if present
+  const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
   
-  return `${API_BASE_URL}${path}`;
+  return `${baseUrl}${normalizedPath}`;
 };
 
 // Export the base URL directly for components to use

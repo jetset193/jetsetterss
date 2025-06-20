@@ -78,7 +78,7 @@ export default defineConfig(({ mode }) => {
             historyApiFallback: true,
             proxy: {
                 '/api': {
-                    target: process.env.VITE_API_URL || 'http://localhost:5001',
+                    target: process.env.VITE_API_URL || 'http://localhost:5005',
                     changeOrigin: true,
                     secure: false,
                     ws: true,

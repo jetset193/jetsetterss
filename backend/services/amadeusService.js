@@ -6,11 +6,11 @@ dotenv.config();
 
 class AmadeusService {
   constructor() {
-    // Use test API endpoints since your credentials are for the test environment
+    // Use production API endpoints with production credentials
     this.baseUrls = {
-      v1: 'https://test.api.amadeus.com/v1',
-      v2: 'https://test.api.amadeus.com/v2',
-      v3: 'https://test.api.amadeus.com/v3'
+      v1: 'https://api.amadeus.com/v1',
+      v2: 'https://api.amadeus.com/v2',
+      v3: 'https://api.amadeus.com/v3'
     };
     this.token = null;
     this.tokenExpiration = null;
@@ -74,6 +74,266 @@ class AmadeusService {
         console.error('Detailed error information:', JSON.stringify(error.response.data, null, 2));
       }
       throw error;
+    }
+  }
+
+  // ===== FLIGHT SEARCH METHODS =====
+
+  async searchFlights(params) {
+    try {
+      const token = await this.getAccessToken();
+      
+      console.log('🔍 Searching flights with params:', params);
+      
+      // Prepare search parameters for Amadeus API
+      const searchParams = {
+        originLocationCode: params.from || params.originLocationCode,
+        destinationLocationCode: params.to || params.destinationLocationCode,
+        departureDate: params.departDate || params.departureDate,
+        adults: parseInt(params.travelers || params.adults) || 1,
+        max: parseInt(params.max) || 10,
+        currencyCode: params.currency || 'USD'
+      };
+
+      // Add return date for round trip
+      if (params.returnDate && params.returnDate.trim() !== '') {
+        searchParams.returnDate = params.returnDate;
+      }
+
+      // Add cabin class if specified
+      if (params.travelClass) {
+        searchParams.travelClass = params.travelClass;
+      }
+
+      console.log('Amadeus flight search parameters:', searchParams);
+
+      const response = await axios.get(`${this.baseUrls.v2}/shopping/flight-offers`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.amadeus+json'
+        },
+        params: searchParams
+      });
+
+      console.log(`✅ Found ${response.data.data?.length || 0} flight offers`);
+      
+      return {
+        success: true,
+        data: response.data.data || [],
+        meta: response.data.meta,
+        dictionaries: response.data.dictionaries
+      };
+
+    } catch (error) {
+      console.error('❌ Flight search error:', error.response?.data || error.message);
+      throw {
+        success: false,
+        error: error.response?.data?.errors?.[0]?.detail || error.message,
+        code: error.response?.status || 500
+      };
+    }
+  }
+
+  // ===== FLIGHT BOOKING METHODS =====
+
+  async createFlightOrder(flightOrderData) {
+    try {
+      const token = await this.getAccessToken();
+      
+      console.log('📋 Creating REAL flight order with Amadeus API...');
+      console.log('Flight Order Data:', JSON.stringify(flightOrderData, null, 2));
+      
+      const response = await axios.post(
+        `${this.baseUrls.v1}/booking/flight-orders`,
+        flightOrderData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/vnd.amadeus+json',
+            'Accept': 'application/vnd.amadeus+json'
+          },
+          timeout: 30000
+        }
+      );
+
+      console.log('✅ REAL flight order created successfully via Amadeus API');
+      
+      return {
+        success: true,
+        data: response.data.data,
+        pnr: response.data.data?.associatedRecords?.[0]?.reference,
+        orderData: response.data,
+        mode: 'LIVE_AMADEUS_BOOKING',
+        message: 'Real booking created with actual PNR'
+      };
+
+    } catch (error) {
+      console.error('❌ REAL Amadeus booking failed:', error.response?.data || error.message);
+      
+      const errorCode = error.response?.data?.errors?.[0]?.code;
+      const errorDetail = error.response?.data?.errors?.[0]?.detail;
+      const status = error.response?.status;
+      
+      // Provide specific error messages for real booking failures
+      let errorMessage = 'Real booking failed';
+      let solution = '';
+      
+      if (errorCode === '38190') {
+        errorMessage = 'Amadeus booking API access denied - Invalid token for Flight Create Orders';
+        solution = 'You need to request Flight Create Orders production access from Amadeus. Contact amadeus4developers@amadeus.com';
+      } else if (errorCode === '38187') {
+        errorMessage = 'Flight Create Orders API not authorized for your account';
+        solution = 'Go to https://developers.amadeus.com/my-apps and request Flight Create Orders production access';
+      } else if (errorCode === '477') {
+        errorMessage = 'Invalid flight offer data format';
+        solution = 'Ensure flight offers are properly priced before booking';
+      } else if (errorCode === '1797') {
+        errorMessage = 'Flight order ID not found';
+        solution = 'Check if the flight offer is still valid and available';
+      } else if (errorCode === '4926') {
+        errorMessage = 'Flight no longer available or price changed';
+        solution = 'Search for new flights and get fresh pricing';
+      } else {
+        errorMessage = errorDetail || 'Unknown Amadeus API error';
+        solution = `Check Amadeus documentation for error code: ${errorCode}`;
+      }
+      
+      throw {
+        success: false,
+        error: errorMessage,
+        solution: solution,
+        code: status || 500,
+        amadeusError: errorCode,
+        details: errorDetail
+      };
+    }
+  }
+
+  async getFlightOrderDetails(orderId) {
+    try {
+      const token = await this.getAccessToken();
+      
+      const response = await axios.get(
+        `${this.baseUrls.v1}/booking/flight-orders/${orderId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.amadeus+json'
+          }
+        }
+      );
+
+      return {
+        success: true,
+        data: response.data.data
+      };
+
+    } catch (error) {
+      console.error('❌ Error fetching flight order details:', error.response?.data || error.message);
+      throw {
+        success: false,
+        error: error.response?.data?.errors?.[0]?.detail || error.message,
+        code: error.response?.status || 500
+      };
+    }
+  }
+
+  // ===== FLIGHT PRICING AND CONFIRMATION =====
+
+  async priceFlightOffer(flightOffer) {
+    try {
+      const token = await this.getAccessToken();
+      
+      console.log('💰 Pricing flight offer...');
+      
+      const response = await axios.post(
+        `${this.baseUrls.v1}/shopping/flight-offers/pricing`,
+        {
+          data: {
+            type: 'flight-offers-pricing',
+            flightOffers: [flightOffer]
+          }
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/vnd.amadeus+json',
+            'Accept': 'application/vnd.amadeus+json'
+          }
+        }
+      );
+
+      console.log('✅ Flight offer priced successfully');
+      
+      return {
+        success: true,
+        data: response.data.data
+      };
+
+    } catch (error) {
+      console.error('❌ Flight pricing error:', error.response?.data || error.message);
+      throw {
+        success: false,
+        error: error.response?.data?.errors?.[0]?.detail || error.message,
+        code: error.response?.status || 500
+      };
+    }
+  }
+
+  // ===== UTILITY METHODS =====
+
+  async getAirportsByCity(cityCode) {
+    try {
+      const token = await this.getAccessToken();
+      
+      const response = await axios.get(`${this.baseUrls.v1}/reference-data/locations/airports`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        params: {
+          keyword: cityCode,
+          'page[limit]': 10
+        }
+      });
+
+      return {
+        success: true,
+        data: response.data.data || []
+      };
+
+    } catch (error) {
+      console.error('❌ Error fetching airports:', error.response?.data || error.message);
+      throw {
+        success: false,
+        error: error.response?.data?.errors?.[0]?.detail || error.message
+      };
+    }
+  }
+
+  async getAirlineCodes() {
+    try {
+      const token = await this.getAccessToken();
+      
+      const response = await axios.get(`${this.baseUrls.v1}/reference-data/airlines`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        params: {
+          'page[limit]': 100
+        }
+      });
+
+      return {
+        success: true,
+        data: response.data.data || []
+      };
+
+    } catch (error) {
+      console.error('❌ Error fetching airline codes:', error.response?.data || error.message);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
@@ -201,21 +461,14 @@ class AmadeusService {
             };
           }
         } catch (fallbackError) {
-          console.error('Fallback hotel check failed:', fallbackError.message);
+          console.log('Fallback hotel search also failed, returning hotel list only');
         }
         
-        // If all else fails, just return the hotel list
-        return {
-          data: hotelListResponse.data.data.map(hotel => ({
-            hotelId: hotel.hotelId,
-            name: hotel.name,
-            address: hotel.address,
-            geoCode: hotel.geoCode
-          }))
-        };
+        // Return just the hotel list
+        return hotelListResponse.data;
       }
     } catch (error) {
-      console.error('Error searching hotels:', error.response?.data || error);
+      console.error('❌ Hotel search error:', error.response?.data || error.message);
       throw error;
     }
   }
@@ -224,19 +477,23 @@ class AmadeusService {
     try {
       const token = await this.getAccessToken();
       
-      const response = await axios.get(`${this.baseUrls.v3}/shopping/hotel-offers/by-hotel`, {
+      const response = await axios.get(`${this.baseUrls.v2}/shopping/hotel-offers/by-hotel`, {
         headers: {
           'Authorization': `Bearer ${token}`
         },
         params: {
           hotelId: hotelId,
-          view: 'FULL'
+          checkInDate: new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0], // Tomorrow
+          checkOutDate: new Date(Date.now() + 2*24*60*60*1000).toISOString().split('T')[0], // Day after tomorrow
+          adults: 2,
+          roomQuantity: 1,
+          currency: 'USD'
         }
       });
-
+      
       return response.data;
     } catch (error) {
-      console.error('Error getting hotel details:', error);
+      console.error('Error getting hotel details:', error.response?.data || error.message);
       throw error;
     }
   }
@@ -247,23 +504,22 @@ class AmadeusService {
       
       const response = await axios.get(`${this.baseUrls.v3}/shopping/hotel-offers`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/vnd.amadeus+json'
+          'Authorization': `Bearer ${token}`
         },
         params: {
           hotelIds: hotelId,
           checkInDate: checkInDate,
           checkOutDate: checkOutDate,
-          adults: adults,
+          adults: adults || 2,
           roomQuantity: 1,
           currency: 'USD',
           bestRateOnly: true
         }
       });
-
+      
       return response.data;
     } catch (error) {
-      console.error('Error getting hotel availability:', error);
+      console.error('Error getting hotel availability:', error.response?.data || error.message);
       throw error;
     }
   }
@@ -272,29 +528,32 @@ class AmadeusService {
     try {
       const token = await this.getAccessToken();
       
-      const response = await axios.post(`${this.baseUrls.v2}/booking/hotel-bookings`, 
-        {
-          data: {
-            offerId: offerId,
-            guests: guests,
-            payments: payments
-          }
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+      const bookingData = {
+        data: {
+          type: "hotel-booking",
+          hotelOffer: {
+            offerId: offerId
+          },
+          guests: guests,
+          payments: payments
         }
-      );
-
+      };
+      
+      const response = await axios.post(`${this.baseUrls.v1}/booking/hotel-bookings`, bookingData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/vnd.amadeus+json'
+        }
+      });
+      
       return response.data;
     } catch (error) {
-      console.error('Error booking hotel:', error);
+      console.error('Error booking hotel:', error.response?.data || error.message);
       throw error;
     }
   }
 }
 
+// Export a singleton instance
 const amadeusService = new AmadeusService();
 export default amadeusService; 
