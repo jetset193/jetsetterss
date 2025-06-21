@@ -702,6 +702,20 @@ const BookingConfirmation = React.lazy(() =>
     .catch(() => ({ default: () => <div>Loading Booking Confirmation...</div> }))
 );
 
+// Import About component
+const About = React.lazy(() => 
+  import('./Pages/About')
+    .catch(() => ({ default: () => (
+      <div style={{ padding: '50px', textAlign: 'center' }}>
+        <h1>About Us</h1>
+        <p>Loading About page...</p>
+        <a href="/" style={{ display: 'inline-block', marginTop: '20px', padding: '10px 20px', background: '#0066B2', color: 'white', textDecoration: 'none', borderRadius: '4px' }}>
+          Back to Home
+        </a>
+      </div>
+    ) }))
+);
+
 const App = () => {
   return (
     <React.Suspense fallback={<LoadingComponent />}>
@@ -743,7 +757,7 @@ const App = () => {
         <Route path="/terms" element={<Terms />} />
         <Route path="/cookies" element={<Cookies />} />
         <Route path="/careers" element={<Careers />} />
-        <Route path="/about" element={<Navigate to="/" />} /> {/* Placeholder redirect */}
+        <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Navigate to="/" />} /> {/* Placeholder redirect */}
         <Route path="/cruise-booking" element={<Navigate to="/cruises" />} /> {/* Redirect to cruises */}
         <Route path="/blog" element={<Navigate to="/" />} /> {/* Placeholder redirect */}
