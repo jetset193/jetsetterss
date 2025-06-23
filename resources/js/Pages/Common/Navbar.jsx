@@ -64,21 +64,19 @@ const Navbar = ({ forceScrolled }) => {
     <nav className={`navbar ${isScrolled || forceScrolled ? 'scrolled' : 'transparent'}`}>
       <div className="navbar-left">
         <Link to="/" className="logo-link">
-          <div className="logo">
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M2 12h20"></path>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-            </svg>
-            <span>JET SETTERS</span>
+          <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <img src="/images/logos/logo.png" alt="JET SETTERS Logo" style={{ height: '42px', width: '42px', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }} />
+            <span style={{
+              fontFamily: 'Playfair Display, Georgia, Times New Roman, serif',
+              fontWeight: 700,
+              fontSize: '1.35rem',
+              letterSpacing: '2.5px',
+              color: '#fff',
+              textTransform: 'uppercase',
+              textShadow: '0 2px 8px #bfa14a, 0 1px 4px rgba(0,0,0,0.18)',
+              padding: '2px 10px',
+              borderRadius: '6px'
+            }}>JETSETTERS</span>
           </div>
         </Link>
       </div>

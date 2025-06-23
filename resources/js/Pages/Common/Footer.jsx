@@ -14,22 +14,9 @@ const Footer = () => {
         <div className="footer-grid">
           <div className="footer-column">
             <Link to="/" className="footer-logo-link">
-              <div className="footer-logo">
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                  className="logo-icon"
-                >
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <path d="M2 12h20"></path>
-                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                </svg>
-                <h3 className="column-title">JETSETTERS</h3>
+              <div className="footer-logo" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <img src="/images/logos/logo.png" alt="JET SETTERS Logo" style={{ height: '48px', width: '48px', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }} />
+                <h3 className="column-title" style={{ fontWeight: 700, fontSize: '1.5rem', letterSpacing: '2px', color: '#1a237e', margin: 0, textShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>JETSETTERS</h3>
               </div>
             </Link>
             <p className="column-description">

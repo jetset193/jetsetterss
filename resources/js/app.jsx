@@ -375,7 +375,7 @@
 
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 
 // Fallback components
@@ -716,9 +716,19 @@ const About = React.lazy(() =>
     ) }))
 );
 
+// ScrollToTop component to scroll to top on route change
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+  }, [pathname]);
+  return null;
+}
+
 const App = () => {
   return (
     <React.Suspense fallback={<LoadingComponent />}>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<FlightLanding />} />
         <Route path="/welcome" element={<Welcome />} />
